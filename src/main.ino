@@ -130,6 +130,7 @@ void reboot() {
 
 void emptyInput(){
         memset(input, 0, sizeof input);
+        counter = 0;
         Serial.print(password);
         Serial.print(" : ");
         Serial.println(input);
