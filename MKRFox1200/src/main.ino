@@ -80,7 +80,9 @@ void loop() {
         timer.run();
         char inputKey = customKeypad.getKey();
 
-        if (inputKey) {
+        if (inputKey == '*') {
+                lock();
+        } else if (inputKey) {
                 timer.restartTimer(timerId);
                 if (counter == sizeof(input)) {
                         counter = 0;
@@ -98,6 +100,10 @@ void loop() {
                 if (counter == sizeof(input)) {
                         Serial.println("Waiting for new input...");
                 }
+        }
+
+        if (inputKey == '#') {
+                sendStringAndGetResponse("");
         }
 
         // // Start the module
@@ -147,11 +153,51 @@ bool passwordIsValid() {
 
 void open() {
         myServo.write(180);
-        delay(2000);
-        lock();
+        delay(100);
+        emptyInput();
 }
 
 void lock() {
         myServo.write(90);
         delay(100);
+        emptyInput();
+}
+
+void sendStringAndGetResponse(String str) {
+        // Start the module
+        SigFox.begin();
+        // Wait at least 30mS after first configuration (100mS before)
+        delay(100);
+        // Clears all pending interrupts
+        SigFox.status();
+        delay(1);
+
+        SigFox.beginPacket();
+        SigFox.write("", 12);
+
+
+        int ret = SigFox.endPacket(true); // send buffer to SIGFOX network and wait for a response
+        if (ret > 0) {
+                Serial.println("No transmission");
+        } else {
+                Serial.println("Transmission ok");
+        }
+
+        Serial.println(SigFox.status(SIGFOX));
+        Serial.println(SigFox.status(ATMEL));
+
+        if (SigFox.parsePacket()) {
+                Serial.println("Response from server:");
+                while (SigFox.available()) {
+                        Serial.print("0x");
+                        Serial.println(SigFox.read(), HEX);
+                }
+        } else {
+                Serial.println("Could not get any response from the server");
+                Serial.println("Check the SigFox coverage in your area");
+                Serial.println("If you are indoor, check the 20dB coverage or move near a window");
+        }
+        Serial.println();
+
+        SigFox.end();
 }
