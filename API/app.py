@@ -10,57 +10,44 @@ from click.decorators import password_option
 
 app = Flask(__name__)
 
-# Password generation scheduler
-cron = Scheduler(daemon=True)
-# Explicitly kick off the background thread
-cron.start()
-
 # Encryption
-encryption_suite = AES.new(b'This is a key123', AES.MODE_CFB, b'This is an IV456')
+# encryption_suite = AES.new(b'This is a key123', AES.MODE_CFB, b'This is an IV456')
 
-password = '2017'
-tempStore = []
-dateStore = []
+deviceId = "18B407"
+password = "2017" + "0000" # MUST be 8 bytes long (Sigfox downlink - https://backend.sigfox.com/apidocs/callback)
 
-@cron.interval_schedule(hours=2)
+# # Password generation scheduler
+# cron = Scheduler(daemon=True)
+# # Explicitly kick off the background thread
+# cron.start()
+# @cron.interval_schedule(hours=2)
 def generatePassword():
     global password
     password = ''.join(random.choice('#ABCD0123456789') for _ in range(4))
+    # Fill the rest of the password with blank characters (Sigfox downlink message MUST be 8 bytes)
+    password += "0000"
     print('Generated password: ' + password)
-    return password
-    
+
 # Shutdown your cron thread if the web process is stopped
 atexit.register(lambda: cron.shutdown(wait=False))
     
 @app.route('/')
 def hello():
-    return 'Welcome to Python Flask!'
+    return 'The current password is: ' + password
 
-@app.route('/data/<device>', methods=['POST'])
-def addMessage(device):
-    content = request.json # grab the json data from the POST request
-    time = int(content['time'])
-    time = datetime.datetime.fromtimestamp(time).strftime('%Y-%m-%d %H:%M:%S') # convert epoch time to human readable time
-    tempStore.append(content['temp'])
-    dateStore.append(time)
-    if len(tempStore) > 10: # truncate data after 10 elements to avoid large lists
-        del tempStore[0]
-        del dateStore[0]
-    print(tempStore) # print useful info to the debug console
-    print(time)
-    print(content['device'])
-    return ('', 200)
-
-@app.route('/getPassword')
+@app.route('/getPassword', methods=['GET', 'POST'])
 def getPassword():
+    if request.method == 'POST':
+        generatePassword()
+        print(request.get_json(silent=True))
     bytesPassword = str.encode(password)
-    print(bytesPassword)
-    encryptedBytesPassword = encryption_suite.encrypt(bytesPassword)
-    print(encryptedBytesPassword)
-#     hexPassword = str(binascii.hexlify(bytesPassword), 'ASCII')
-#     return json.dumps({"18B407" : { "downlinkData" : hexPassword}})
-    hexPassword = str(binascii.hexlify(encryptedBytesPassword), 'ASCII')
-#     return json.dumps({"18B407" : { "downlinkData" : hexPassword}}
-    return json.dumps({"18B407" : { "downlinkData" : "deadbeefcafebabe"}})
+    hexPassword = str(binascii.hexlify(bytesPassword), 'ASCII')
+    print("Hex message: " + hexPassword)
+    
+#     encryptedBytesPassword = encryption_suite.encrypt(bytesPassword)
+#     print(encryptedBytesPassword)
+    
+    return json.dumps({deviceId : { "downlinkData" : hexPassword}})
+
 if __name__=="__main__":
     app.run()

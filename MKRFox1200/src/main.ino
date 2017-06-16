@@ -4,7 +4,7 @@
 //
 // Created: 16.05.2017
 // Author: Antoine de Chassey
-// Code: https://github.com/AntoinedeChassey/MKRFOX1200_weather_station
+// Code: https://github.com/AntoinedeChassey/MKRFox1200_access_control
 // --------------------------------------------------------------------------
 
 #include "SigFox.h"
@@ -15,8 +15,11 @@
 
 // Defines & variables
 #define DEBUG true                // Set DEBUG to false to disable serial prints
-#define SLEEPTIME 15 * 60 * 1000  // Set the delay to 15 minutes (15 min x 60 seconds x 1000 milliseconds)
-#define SERVO 5                   // Set the servo attached pin
+// Pins
+#define SERVO_PIN 5
+#define RED_PIN 12
+#define GREEN_PIN 11
+#define BLUE_PIN 10
 
 const byte ROWS = 4;  // Four rows
 const byte COLS = 4;  // Four columns
@@ -34,6 +37,8 @@ char password[4]   = {'2', '0', '1', '7'};   // The default password byte array
 char input[4]      = {};                     // The input byte array - 4 digits
 int counter        = 0;                      // The counter used to fill the array
 int timerId;
+unsigned long previousMillis = 0;            // Will store last updated time
+const long interval = 1000 * 60 * 60 * 6;   // Interval at which to ask for a new password (every 6 hours)
 
 typedef struct __attribute__ ((packed)) sigfox_message {
         uint8_t lastMessageStatus;
@@ -47,8 +52,13 @@ SigfoxMessage msg;
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 Servo myServo;
 SimpleTimer timer;
+RTCZero rtc;
 
 void setup() {
+        pinMode(RED_PIN, OUTPUT);
+        pinMode(GREEN_PIN, OUTPUT);
+        pinMode(BLUE_PIN, OUTPUT);
+
         if (DEBUG) {
                 // We are using Serial1 instead than Serial because we are going in standby
                 // and the USB port could get confused during wakeup. To read the DEBUG prints,
@@ -72,8 +82,10 @@ void setup() {
                 SigFox.debug();
         }
 
-        myServo.attach(SERVO);  // attaches the servo on pin 9 to the servo object
-        timerId = timer.setInterval(3000, emptyInput);   // Initialize the timer
+        myServo.attach(SERVO_PIN); // attaches the servo on pin 9 to the servo object
+        timerId = timer.setInterval(3000, emptyInputBuffer); // Initialize the timer to executre the emptyInputBuffer function every X seconds
+
+        lock(); // Lock at start
 }
 
 void loop() {
@@ -83,7 +95,10 @@ void loop() {
         if (inputKey == '*') {
                 lock();
         } else if (inputKey) {
+                // Restart the timer
                 timer.restartTimer(timerId);
+                // Disable the timer because someone is typing
+                timer.disable(timerId);
                 if (counter == sizeof(input)) {
                         counter = 0;
                 }
@@ -99,34 +114,34 @@ void loop() {
 
                 if (counter == sizeof(input)) {
                         Serial.println("Waiting for new input...");
+                        // Empty buffer
+                        emptyInputBuffer();
+                        // BLink the LED in RED
+                        setLEDColor(0, 0, 0);  // off
+                        delay(100);
+                        setLEDColor(255, 0, 0);  // red
+                        delay(100);
+                        setLEDColor(0, 0, 0);  // off
+                        delay(100);
+                        setLEDColor(255, 0, 0);  // red
                 }
+                // Enable the timer back
+                timer.enable(timerId);
         }
 
-        if (inputKey == '#') {
-                sendStringAndGetResponse("");
+        unsigned long currentMillis = millis();
+        if (currentMillis - previousMillis >= interval) {
+                // save the last time you read the sensor
+                previousMillis = currentMillis;
+                sendStringAndGetResponse();
         }
+}
 
-        // // Start the module
-        // SigFox.begin();
-        // // Wait at least 30ms after first configuration (100ms before)
-        // delay(100);
-        //
-        // // We can only read the module temperature before SigFox.end()
-        // t = SigFox.internalTemperature();
-        // msg.moduleTemperature = convertoFloatToInt16(t, 60, -60);
-        //
-        // // Clears all pending interrupts
-        // SigFox.status();
-        // delay(1);
-        //
-        // SigFox.beginPacket();
-        // SigFox.write((uint8_t*)&msg, 12);
-        //
-        // msg.lastMessageStatus = SigFox.endPacket();
-        //
-        // SigFox.end();
-        // //Sleep for 15 minutes
-        // LowPower.sleep(SLEEPTIME);
+void setLEDColor(int red, int green, int blue)
+{
+        analogWrite(RED_PIN, red);
+        analogWrite(GREEN_PIN, green);
+        analogWrite(BLUE_PIN, blue);
 }
 
 void reboot() {
@@ -134,16 +149,18 @@ void reboot() {
         while (1) ;
 }
 
-void emptyInput(){
+void emptyInputBuffer(){
         memset(input, 0, sizeof input);
         counter = 0;
-        Serial.print(password);
-        Serial.print(" : ");
-        Serial.println(input);
+        if(DEBUG) {
+                Serial.print(password);
+                Serial.print(" : ");
+                Serial.println(input);
+        }
 }
 
 bool passwordIsValid() {
-        for(int i=0; i<sizeof(input); i++) {
+        for(u_int i=0; i<sizeof(input); i++) {
                 if(password[i] != input[i]) {
                         return false;
                 }
@@ -154,16 +171,23 @@ bool passwordIsValid() {
 void open() {
         myServo.write(180);
         delay(100);
-        emptyInput();
+        emptyInputBuffer();
+        setLEDColor(0, 255, 0); // green
 }
 
 void lock() {
         myServo.write(90);
         delay(100);
-        emptyInput();
+        emptyInputBuffer();
+        setLEDColor(255, 0, 0);  // red
 }
 
-void sendStringAndGetResponse(String str) {
+void sendStringAndGetResponse() {
+        // Disable the timer because someone is typing
+        timer.disable(timerId);
+        // Set the LED to blue
+        setLEDColor(0, 0, 255);
+
         // Start the module
         SigFox.begin();
         // Wait at least 30mS after first configuration (100mS before)
@@ -173,11 +197,11 @@ void sendStringAndGetResponse(String str) {
         delay(1);
 
         SigFox.beginPacket();
-        SigFox.write("", 12);
+        SigFox.write("REQUEST", 7);
 
 
         int ret = SigFox.endPacket(true); // send buffer to SIGFOX network and wait for a response
-        if (ret > 0) {
+        if(ret > 0) {
                 Serial.println("No transmission");
         } else {
                 Serial.println("Transmission ok");
@@ -186,11 +210,18 @@ void sendStringAndGetResponse(String str) {
         Serial.println(SigFox.status(SIGFOX));
         Serial.println(SigFox.status(ATMEL));
 
-        if (SigFox.parsePacket()) {
+        if(SigFox.parsePacket()) {
                 Serial.println("Response from server:");
-                while (SigFox.available()) {
-                        Serial.print("0x");
-                        Serial.println(SigFox.read(), HEX);
+                int counter = 0;
+                while(SigFox.available()) {
+                        // Serial.print("0x");
+                        // Serial.println((char) SigFox.read(), HEX);
+                        if(counter < 4) {
+                                password[counter] = char(SigFox.read());
+                        } else {
+                                SigFox.read();
+                        }
+                        counter++;
                 }
         } else {
                 Serial.println("Could not get any response from the server");
@@ -200,4 +231,7 @@ void sendStringAndGetResponse(String str) {
         Serial.println();
 
         SigFox.end();
+
+        lock();
+        timer.enable(timerId);
 }
