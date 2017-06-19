@@ -4,7 +4,7 @@
 //
 // Created: 16.05.2017
 // Author: Antoine de Chassey
-// Code: https://github.com/AntoinedeChassey/MKRFox1200_access_control
+// Code: https://github.com/AntoinedeChassey/MKRFox1200_lock_box
 // --------------------------------------------------------------------------
 
 #include "SigFox.h"
@@ -17,9 +17,9 @@
 #define DEBUG true                // Set DEBUG to false to disable serial prints
 // Pins
 #define SERVO_PIN 5
-#define RED_PIN 12
+#define RED_PIN   12
 #define GREEN_PIN 11
-#define BLUE_PIN 10
+#define BLUE_PIN  10
 
 const byte ROWS = 4;  // Four rows
 const byte COLS = 4;  // Four columns
@@ -38,14 +38,7 @@ char input[4]      = {};                     // The input byte array - 4 digits
 int counter        = 0;                      // The counter used to fill the array
 int timerId;
 unsigned long previousMillis = 0;            // Will store last updated time
-const long interval = 1000 * 60 * 60 * 6;   // Interval at which to ask for a new password (every 6 hours)
-
-typedef struct __attribute__ ((packed)) sigfox_message {
-        uint8_t lastMessageStatus;
-} SigfoxMessage;
-
-// Stub for message which will be sent
-SigfoxMessage msg;
+const long interval = 1000 * 60 * 60 * 6;    // Interval at which to ask for a new password (every 6 hours)
 
 // Objects
 // Initialize an instance of class NewKeypad
@@ -85,7 +78,7 @@ void setup() {
         myServo.attach(SERVO_PIN); // attaches the servo on pin 9 to the servo object
         timerId = timer.setInterval(3000, emptyInputBuffer); // Initialize the timer to executre the emptyInputBuffer function every X seconds
 
-        lock(); // Lock at start
+        lock(); // Make sure to lock the box
 }
 
 void loop() {
@@ -94,6 +87,7 @@ void loop() {
 
         if (inputKey == '*') {
                 lock();
+                blinkRedLED();
         } else if (inputKey) {
                 // Restart the timer
                 timer.restartTimer(timerId);
@@ -116,14 +110,7 @@ void loop() {
                         Serial.println("Waiting for new input...");
                         // Empty buffer
                         emptyInputBuffer();
-                        // BLink the LED in RED
-                        setLEDColor(0, 0, 0);  // off
-                        delay(100);
-                        setLEDColor(255, 0, 0);  // red
-                        delay(100);
-                        setLEDColor(0, 0, 0);  // off
-                        delay(100);
-                        setLEDColor(255, 0, 0);  // red
+                        blinkRedLED();
                 }
                 // Enable the timer back
                 timer.enable(timerId);
@@ -142,6 +129,17 @@ void setLEDColor(int red, int green, int blue)
         analogWrite(RED_PIN, red);
         analogWrite(GREEN_PIN, green);
         analogWrite(BLUE_PIN, blue);
+}
+
+void blinkRedLED(){
+        // BLink the LED in RED
+        setLEDColor(0, 0, 0); // off
+        delay(100);
+        setLEDColor(255, 0, 0); // red
+        delay(100);
+        setLEDColor(0, 0, 0); // off
+        delay(100);
+        setLEDColor(255, 0, 0); // red
 }
 
 void reboot() {

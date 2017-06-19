@@ -1,19 +1,27 @@
+# -*- coding: utf8-*-
+'''
+Created on 19.06.2017
+@author: Antoine de Chassey
+@project: MKRFox1200 Lock Box
+@URL: https://github.com/AntoinedeChassey/MKRFox1200_lock_box
+'''
+
 import os
 import atexit
 import random
 import binascii
-from apscheduler.scheduler import Scheduler
 from flask import Flask, render_template, request, json
-from test.test_string_literals import byte
-from Crypto.Cipher import AES
-from click.decorators import password_option
+# from apscheduler.scheduler import Scheduler
+# from test.test_string_literals import byte
+# from Crypto.Cipher import AES
+# from click.decorators import password_option
 
 app = Flask(__name__)
 
 # Encryption
 # encryption_suite = AES.new(b'This is a key123', AES.MODE_CFB, b'This is an IV456')
 
-deviceId = "18B407"
+deviceId = "18B407" # Your device ID, check it out on https://backend.sigfox.com/
 password = "2017" + "0000" # MUST be 8 bytes long (Sigfox downlink - https://backend.sigfox.com/apidocs/callback)
 
 # # Password generation scheduler
@@ -29,7 +37,7 @@ def generatePassword():
     print('Generated password: ' + password)
 
 # Shutdown your cron thread if the web process is stopped
-atexit.register(lambda: cron.shutdown(wait=False))
+# atexit.register(lambda: cron.shutdown(wait=False))
     
 @app.route('/')
 def hello():
