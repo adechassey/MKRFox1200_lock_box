@@ -16,10 +16,11 @@
 // Defines & variables
 #define DEBUG true                // Set DEBUG to false to disable serial prints
 // Pins
-#define SERVO_PIN 5
-#define RED_PIN   12
-#define GREEN_PIN 11
-#define BLUE_PIN  10
+#define SERVO_PIN   5
+#define BUZZER_PIN  4
+#define RED_PIN     12
+#define GREEN_PIN   11
+#define BLUE_PIN    10
 
 const byte ROWS = 4;  // Four rows
 const byte COLS = 4;  // Four columns
@@ -48,6 +49,7 @@ SimpleTimer timer;
 RTCZero rtc;
 
 void setup() {
+        pinMode(BUZZER_PIN, OUTPUT);
         pinMode(RED_PIN, OUTPUT);
         pinMode(GREEN_PIN, OUTPUT);
         pinMode(BLUE_PIN, OUTPUT);
@@ -89,6 +91,8 @@ void loop() {
                 lock();
                 blinkRedLED();
         } else if (inputKey) {
+                // Buzz the buzzer
+                tone(BUZZER_PIN, 1000, 100);
                 // Restart the timer
                 timer.restartTimer(timerId);
                 // Disable the timer because someone is typing
@@ -167,14 +171,18 @@ bool passwordIsValid() {
 }
 
 void open() {
-        myServo.write(180);
+        myServo.write(105);
         delay(100);
         emptyInputBuffer();
         setLEDColor(0, 255, 0); // green
 }
 
 void lock() {
-        myServo.write(90);
+        // Buzz the buzzer
+        tone(BUZZER_PIN, 5000, 50);
+        delay(100);
+        tone(BUZZER_PIN, 5000, 50);
+        myServo.write(35);
         delay(100);
         emptyInputBuffer();
         setLEDColor(255, 0, 0);  // red
