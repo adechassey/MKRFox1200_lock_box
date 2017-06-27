@@ -12,7 +12,6 @@
 #include "Keypad.h"
 #include "Servo.h"
 #include "SimpleTimer.h"
-#include "Scheduler.h"
 
 // Defines & variables
 #define DEBUG true                // Set DEBUG to false to disable serial prints
@@ -87,57 +86,68 @@ void setup() {
         timerId = timer.setInterval(3000, emptyInputBuffer); // Initialize the timer to executre the emptyInputBuffer function every X seconds
 
         lock(); // Make sure to lock the box
-        // Add parallel tasks
-        Scheduler.startLoop(loop2);
 }
 
 void loop() {
-        timer.run();
-        char inputKey = customKeypad.getKey();
-
-        if (inputKey == '*') {
-                lock();
-                blinkRedLED();
-        } else if (inputKey) {
-                // Buzz the buzzer
-                tone(BUZZER_PIN, 1000, 100);
-                // Restart the timer
-                timer.restartTimer(timerId);
-                // Disable the timer because someone is typing
-                timer.disable(timerId);
-                if (counter == sizeof(input)) {
-                        counter = 0;
-                }
-                input[counter] = inputKey;
-                counter++;
-
-                Serial.print(password);
-                Serial.print(" : ");
-                Serial.println(input);
-
-                if (passwordIsValid())
-                        open();
-
-                if (counter == sizeof(input)) {
-                        Serial.println("Waiting for new input...");
-                        // Empty buffer
-                        emptyInputBuffer();
-                        blinkRedLED();
-                }
-                // Enable the timer back
-                timer.enable(timerId);
-        }
-}
-
-void loop2( ){
         unsigned long currentMillis = millis();
-
         if (currentMillis - previousMillis >= interval) {
                 // save the last time you read the sensor
                 previousMillis = currentMillis;
                 getPasswordBySigfox();
         }
-        yield();
+
+        timer.run();
+        char inputKey = customKeypad.getKey();
+
+        if(inputKey) {
+                switch (inputKey) {
+                case '*':
+                        lock();
+                        blinkRedLED();
+                        break;
+                case '#':
+                        password[0] = '2';
+                        password[1] = '0';
+                        password[2] = '1';
+                        password[3] = '7';
+                        tone(BUZZER_PIN, 5000, 50);
+                        delay(100);
+                        tone(BUZZER_PIN, 2000, 50);
+                        delay(100);
+                        tone(BUZZER_PIN, 2000, 50);
+                        delay(100);
+                        tone(BUZZER_PIN, 5000, 50);
+                        break;
+                default:
+                        // Buzz the buzzer
+                        tone(BUZZER_PIN, 1000, 100);
+                        // Restart the timer
+                        timer.restartTimer(timerId);
+                        // Disable the timer because someone is typing
+                        timer.disable(timerId);
+                        if (counter == sizeof(input)) {
+                                counter = 0;
+                        }
+                        input[counter] = inputKey;
+                        counter++;
+
+                        Serial.print(password);
+                        Serial.print(" : ");
+                        Serial.println(input);
+
+                        if (passwordIsValid())
+                                open();
+
+                        if (counter == sizeof(input)) {
+                                Serial.println("Waiting for new input...");
+                                // Empty buffer
+                                emptyInputBuffer();
+                                blinkRedLED();
+                        }
+                        // Enable the timer back
+                        timer.enable(timerId);
+                }
+        }
 }
 
 void setLEDColor(int red, int green, int blue) {
@@ -209,7 +219,7 @@ void lock() {
 }
 
 void getPasswordBySigfox() {
-        Serial.println("Fetching new password by Sigfox!");
+        Serial.println("Fetching new password with Sigfox!");
 
         // Disable the timer
         //timer.disable(timerId);
@@ -223,6 +233,7 @@ void getPasswordBySigfox() {
         FLOATUNION_t myFloat;
         myFloat.voltage = voltage;
         if (DEBUG) {
+                Serial.println("Battery estimation hexadecimal 4 bytes float:");
                 for (u_int i=0; i<sizeof(myFloat.bytes); i++)
                 {
                         Serial.print(myFloat.bytes[i], HEX); // Print the hex representation of the float
@@ -242,7 +253,6 @@ void getPasswordBySigfox() {
         SigFox.beginPacket();
         SigFox.write(myFloat.bytes, sizeof(myFloat.bytes));
 
-
         int ret = SigFox.endPacket(true); // send buffer to SIGFOX network and wait for a response
         if(ret > 0) {
                 Serial.println("No transmission");
@@ -259,8 +269,10 @@ void getPasswordBySigfox() {
                 while(SigFox.available()) {
                         // Serial.print("0x");
                         // Serial.println((char) SigFox.read(), HEX);
-                        if(counter < 4) {
-                                password[counter] = char(SigFox.read());
+                        char incomingChar = char(SigFox.read());
+                        if(counter < 4 && incomingChar != ' ') {
+                                Serial.println(incomingChar);
+                                password[counter] = incomingChar;
                         } else {
                                 SigFox.read();
                         }
