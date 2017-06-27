@@ -21,7 +21,7 @@ app = Flask(__name__)
 # Encryption
 # encryption_suite = AES.new(b'This is a key123', AES.MODE_CFB, b'This is an IV456')
 
-deviceId = "18B407" # Your device ID, check it out on https://backend.sigfox.com/
+deviceId = "" # Your device ID, check it out on https://backend.sigfox.com/
 password = "2017" + "0000" # MUST be 8 bytes long (Sigfox downlink - https://backend.sigfox.com/apidocs/callback)
 
 # # Password generation scheduler
@@ -41,7 +41,7 @@ def generatePassword():
     
 @app.route('/')
 def hello():
-    return 'The current password is: ' + password
+    return 'The current password is: ' + password[0:4]
 
 @app.route('/getPassword', methods=['GET', 'POST'])
 def getPassword():

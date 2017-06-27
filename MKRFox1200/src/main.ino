@@ -1,11 +1,11 @@
 
-// -------------------------------------------------------------------------
-// This project controls access by updating rights with the Sigfox network
+// -------------------------------------------------------------------------------------
+// This project controls and notifies access by updating rights with the Sigfox network
 //
-// Created: 16.05.2017
+// Created: 16.06.2017
 // Author: Antoine de Chassey
 // Code: https://github.com/AntoinedeChassey/MKRFox1200_lock_box
-// --------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
 
 #include "SigFox.h"
 #include "ArduinoLowPower.h"
@@ -228,7 +228,7 @@ void getPasswordBySigfox() {
 
         // Read the input on analog pin 0:
         int sensorValue = analogRead(ADC_BATTERY);
-        // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 3.7V, 3.7v 3Ah):
+        // Convert the analog reading (which goes from 0 to ~400 at 3.7V)
         float voltage = sensorValue * (3.7 / 400);
         FLOATUNION_t myFloat;
         myFloat.voltage = voltage;
@@ -239,7 +239,7 @@ void getPasswordBySigfox() {
                         Serial.print(myFloat.bytes[i], HEX); // Print the hex representation of the float
                         Serial.print(' ');
                 }
-                Serial.println();
+                Serial.println("Voltage: " + String(myFloat.voltage) + "V");
         }
 
         // Start the module
