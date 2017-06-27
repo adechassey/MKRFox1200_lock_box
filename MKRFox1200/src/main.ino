@@ -12,6 +12,7 @@
 #include "Keypad.h"
 #include "Servo.h"
 #include "SimpleTimer.h"
+#include "Scheduler.h"
 
 // Defines & variables
 #define DEBUG true                // Set DEBUG to false to disable serial prints
@@ -40,6 +41,12 @@ int counter        = 0;                      // The counter used to fill the arr
 int timerId;
 unsigned long previousMillis = 0;            // Will store last updated time
 const long interval = 1000 * 60 * 60 * 6;    // Interval at which to ask for a new password (every 6 hours)
+
+typedef union
+{
+        float voltage;
+        uint8_t bytes[4]; // Float - Little Endian (DCBA)
+} FLOATUNION_t;
 
 // Objects
 // Initialize an instance of class NewKeypad
@@ -77,10 +84,11 @@ void setup() {
                 SigFox.debug();
         }
 
-        myServo.attach(SERVO_PIN); // attaches the servo on pin 9 to the servo object
         timerId = timer.setInterval(3000, emptyInputBuffer); // Initialize the timer to executre the emptyInputBuffer function every X seconds
 
         lock(); // Make sure to lock the box
+        // Add parallel tasks
+        Scheduler.startLoop(loop2);
 }
 
 void loop() {
@@ -119,17 +127,20 @@ void loop() {
                 // Enable the timer back
                 timer.enable(timerId);
         }
+}
 
+void loop2( ){
         unsigned long currentMillis = millis();
+
         if (currentMillis - previousMillis >= interval) {
                 // save the last time you read the sensor
                 previousMillis = currentMillis;
-                sendStringAndGetResponse();
+                getPasswordBySigfox();
         }
+        yield();
 }
 
-void setLEDColor(int red, int green, int blue)
-{
+void setLEDColor(int red, int green, int blue) {
         analogWrite(RED_PIN, red);
         analogWrite(GREEN_PIN, green);
         analogWrite(BLUE_PIN, blue);
@@ -151,7 +162,7 @@ void reboot() {
         while (1) ;
 }
 
-void emptyInputBuffer(){
+void emptyInputBuffer() {
         memset(input, 0, sizeof input);
         counter = 0;
         if(DEBUG) {
@@ -171,10 +182,15 @@ bool passwordIsValid() {
 }
 
 void open() {
-        myServo.write(105);
-        delay(100);
+        myServo.attach(SERVO_PIN);
+        digitalWrite(SERVO_PIN, HIGH);
+        myServo.write(110);
+        delay(500);
+        digitalWrite(SERVO_PIN, LOW);
+        myServo.detach(); // detach servo to stop it working
         emptyInputBuffer();
         setLEDColor(0, 255, 0); // green
+        sendAlertBySigfox();
 }
 
 void lock() {
@@ -182,17 +198,38 @@ void lock() {
         tone(BUZZER_PIN, 5000, 50);
         delay(100);
         tone(BUZZER_PIN, 5000, 50);
+        myServo.attach(SERVO_PIN);
+        digitalWrite(SERVO_PIN, HIGH);
         myServo.write(35);
-        delay(100);
+        delay(500);
+        digitalWrite(SERVO_PIN, LOW);
+        myServo.detach(); // detach servo to stop it working
         emptyInputBuffer();
         setLEDColor(255, 0, 0);  // red
 }
 
-void sendStringAndGetResponse() {
-        // Disable the timer because someone is typing
-        timer.disable(timerId);
+void getPasswordBySigfox() {
+        Serial.println("Fetching new password by Sigfox!");
+
+        // Disable the timer
+        //timer.disable(timerId);
         // Set the LED to blue
         setLEDColor(0, 0, 255);
+
+        // Read the input on analog pin 0:
+        int sensorValue = analogRead(ADC_BATTERY);
+        // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 3.7V, 3.7v 3Ah):
+        float voltage = sensorValue * (3.7 / 400);
+        FLOATUNION_t myFloat;
+        myFloat.voltage = voltage;
+        if (DEBUG) {
+                for (u_int i=0; i<sizeof(myFloat.bytes); i++)
+                {
+                        Serial.print(myFloat.bytes[i], HEX); // Print the hex representation of the float
+                        Serial.print(' ');
+                }
+                Serial.println();
+        }
 
         // Start the module
         SigFox.begin();
@@ -203,7 +240,7 @@ void sendStringAndGetResponse() {
         delay(1);
 
         SigFox.beginPacket();
-        SigFox.write("REQUEST", 7);
+        SigFox.write(myFloat.bytes, sizeof(myFloat.bytes));
 
 
         int ret = SigFox.endPacket(true); // send buffer to SIGFOX network and wait for a response
@@ -238,6 +275,34 @@ void sendStringAndGetResponse() {
 
         SigFox.end();
 
+        // Make sure the box is locked with the new password
         lock();
-        timer.enable(timerId);
+        // Enable the timer back
+        //timer.enable(timerId);
+}
+
+void sendAlertBySigfox() {
+        Serial.println("Sending alert by Sigfox!");
+        // Start the module
+        SigFox.begin();
+        // Wait at least 30mS after first configuration (100mS before)
+        delay(100);
+        // Clears all pending interrupts
+        SigFox.status();
+        delay(1);
+
+        SigFox.beginPacket();
+        SigFox.write("OPEN", 4);
+
+
+        int ret = SigFox.endPacket();
+        if(ret > 0) {
+                Serial.println("No transmission");
+        } else {
+                Serial.println("Transmission ok");
+        }
+
+        Serial.println(SigFox.status(SIGFOX));
+        Serial.println(SigFox.status(ATMEL));
+        SigFox.end();
 }
