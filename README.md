@@ -3,15 +3,26 @@
 What if you had to store something precious to be picked up by someone you do not know ?
 What if you were far away from the box and had to change the password for security reasons ?
 
-This is where Sigfox comes in ! Indeed, Sigfox allows you to use 4 downlink messages per day. The idea is to be able to update the password controlling the opening of the box. Therefore, when someone has finished using it, the box's password will be set with a newly generated one from a web application. The owner can then decide to share the password to whom he wants.
+This is where Sigfox comes in ! Indeed, Sigfox allows you to use 4 downlink messages per day. The idea is to be able to update the password controlling the opening of the box. Therefore in this tutorial, every 6 hours (4 times per day), the box's password will be set with a newly generated one from a web application. The owner can then decide to share the password to whom he wants. He will also be notified every time the box is opened !
 
 This repository includes:
 - the firmware to upload on the MKRFox1200
 - the web API generating a new password
 
-A video presentation is available [here](https://www.youtube.com/watch?v=m9f7ZpouoyQ)!
+A video presentation is available [here](https://www.youtube.com/watch?v=)!
 
-Below is a diagram showing how the system works:
+Some photos showing how the mechanical part works:
+<p align="center">
+    Opened :unlock:
+    <img src="img/unlock.png">
+</p>
+
+<p align="center">
+    Closed :lock:
+    <img src="img/lock.png">
+</p>
+
+Below is a diagram showing how the application works:
     <p align="center">
         <img src="img/presentation.png?raw=true">
     </p>
@@ -23,9 +34,10 @@ Below is a diagram showing how the system works:
 - a [buzzer](http://www.ebay.com/itm/DC-3-12V-110DB-Discontinuous-Beep-Alarm-Electronic-Buzzer-Sounder-LW-/172369764855?epid=1287039987&hash=item282209e1f7:g:J1wAAOSw-CpX-vgf)
 - an [RGB led](https://www.adafruit.com/product/159)
 - 2x AA batteries or equivalent
+    - a box with a lock system
 
 ## Installation
-Clone the repo: `git clone https://github.com/AntoinedeChassey/MKRFox1200_lock_box`
+Start by cloning the repo: `git clone https://github.com/AntoinedeChassey/MKRFox1200_lock_box`
 
 ### MKRFox1200
 1. [Activate](https://backend.sigfox.com/activate/arduino) your board on the Sigfox Backend _(you can follow __[this](https://www.arduino.cc/en/Guide/MKRFox1200)__ and  __[this](https://www.arduino.cc/en/Tutorial/SigFoxFirstConfiguration)__ tutorials)_
