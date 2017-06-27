@@ -14,12 +14,12 @@ A video presentation is available [here](https://www.youtube.com/watch?v=)!
 Some photos showing how the mechanical part works:
 <p align="center">
     Opened :unlock:
-    <img src="img/unlock.png">
+    <img width="60%" height="60%" src="img/unlock.png">
 </p>
 
 <p align="center">
     Closed :lock:
-    <img src="img/lock.png">
+    <img width="60%" height="60%" src="img/lock.png">
 </p>
 
 Below is a diagram showing how the application works:
