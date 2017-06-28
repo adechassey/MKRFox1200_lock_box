@@ -10,6 +10,7 @@ import os
 import atexit
 import random
 import binascii
+import struct
 from flask import Flask, render_template, request, json
 # from apscheduler.scheduler import Scheduler
 # from test.test_string_literals import byte
@@ -21,8 +22,9 @@ app = Flask(__name__)
 # Encryption
 # encryption_suite = AES.new(b'This is a key123', AES.MODE_CFB, b'This is an IV456')
 
-deviceId = "" # Your device ID, check it out on https://backend.sigfox.com/
+deviceId = "18B407" # Your device ID, check it out on https://backend.sigfox.com/
 password = "2017" + "0000" # MUST be 8 bytes long (Sigfox downlink - https://backend.sigfox.com/apidocs/callback)
+battery = ""
 
 # # Password generation scheduler
 # cron = Scheduler(daemon=True)
@@ -31,7 +33,7 @@ password = "2017" + "0000" # MUST be 8 bytes long (Sigfox downlink - https://bac
 # @cron.interval_schedule(hours=2)
 def generatePassword():
     global password
-    password = ''.join(random.choice('#ABCD0123456789') for _ in range(4))
+    password = ''.join(random.choice('ABCD0123456789') for _ in range(4))
     # Fill the rest of the password with blank characters (Sigfox downlink message MUST be 8 bytes)
     password += "0000"
     print('Generated password: ' + password)
@@ -41,16 +43,25 @@ def generatePassword():
     
 @app.route('/')
 def hello():
-    return 'The current password is: ' + password[0:4]
+    return 'The current password is: ' + password[0:4] + ' and the estimated battery voltage is: ' + str(battery)[0:4]
 
 @app.route('/getPassword', methods=['GET', 'POST'])
-def getPassword():
+def getPassword():    
     if request.method == 'POST':
-        generatePassword()
+        global battery 
+        message = binascii.unhexlify(request.get_json(silent=True)['data'][0:8]).decode('ASCII')
+        battery = struct.unpack('f', binascii.unhexlify(request.get_json(silent=True)['data'][8:16]))[0]
+        print("Message: " + message)
+        print("Battery: " + str(battery))
+        
+        if(message != "OPEN"):
+            generatePassword()
+            
         print(request.get_json(silent=True))
+        
     bytesPassword = str.encode(password)
     hexPassword = str(binascii.hexlify(bytesPassword), 'ASCII')
-    print("Hex message: " + hexPassword)
+#     print("Hex message: " + hexPassword)
     
 #     encryptedBytesPassword = encryption_suite.encrypt(bytesPassword)
 #     print(encryptedBytesPassword)

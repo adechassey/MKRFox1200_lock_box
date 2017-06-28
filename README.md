@@ -7,19 +7,25 @@ This is where Sigfox comes in ! Indeed, Sigfox allows you to use 4 downlink mess
 
 This repository includes:
 - the firmware to upload on the MKRFox1200
-- the web API generating a new password
+- the web API generating a new password and receiving the box's notifications
 
-A video presentation is available [here](https://www.youtube.com/watch?v=)!
+A video presentation is available [here](https://www.youtube.com/watch?v=yTfbNe17UA4)!
 
 Some photos showing how the mechanical part works:
+
+Opened :unlock:
 <p align="center">
-    Opened :unlock:
     <img width="60%" height="60%" src="img/unlock.png">
 </p>
 
+Closed :lock:
 <p align="center">
-    Closed :lock:
     <img width="60%" height="60%" src="img/lock.png">
+</p>
+
+Making the box:
+<p align="center">
+    <img width="60%" height="60%" src="img/making.png">
 </p>
 
 Below is a diagram showing how the application works:
@@ -29,12 +35,14 @@ Below is a diagram showing how the application works:
 
 ## Hardware Requirements
 
-- an [MKRFox1200](http://www.sigfox.com/) board
+- an [MKRFox1200](https://www.arduino.cc/en/Main.ArduinoBoardMKRFox1200) board
 - a [4x4 membrane keypad](http://www.ebay.com/itm/4-x-4-Matrix-Array-16-Key-Membrane-Switch-Keypad-Keyboard-for-Arduino-AVR-PI-C-/310511616357)
 - a [buzzer](http://www.ebay.com/itm/DC-3-12V-110DB-Discontinuous-Beep-Alarm-Electronic-Buzzer-Sounder-LW-/172369764855?epid=1287039987&hash=item282209e1f7:g:J1wAAOSw-CpX-vgf)
 - an [RGB led](https://www.adafruit.com/product/159)
-- 2x AA batteries or equivalent
-    - a box with a lock system
+- a [servo motor](http://www.ebay.com/itm/9G-SG90-Micro-Servo-motor-RC-Robot-Helicopter-Airplane-Control-Car-Boat-/172420250871?epid=0&hash=item28250c3cf7:g:jtgAAOSwiDFYNyL8)
+- 2x AA batteries or equivalent (in this tutorial I use a [3.7 Li-Ion battery](https://www.adafruit.com/product/1781))
+- some [jumper wires](https://www.adafruit.com/product/759) and a breadboard
+- a box with a lock system
 
 ## Installation
 Start by cloning the repo: `git clone https://github.com/AntoinedeChassey/MKRFox1200_lock_box`
@@ -42,6 +50,26 @@ Start by cloning the repo: `git clone https://github.com/AntoinedeChassey/MKRFox
 ### MKRFox1200
 1. [Activate](https://backend.sigfox.com/activate/arduino) your board on the Sigfox Backend _(you can follow __[this](https://www.arduino.cc/en/Guide/MKRFox1200)__ and  __[this](https://www.arduino.cc/en/Tutorial/SigFoxFirstConfiguration)__ tutorials)_
 2. Flash the MKRFox1200 with the firmware located in this folder: _MKRFox1200_lock_box/MKRFox1200/__src___ (I used __[PlatformIO](http://platformio.org/)__ a new great IDE for IoT. After being installed on Atom, the folder "MKRFox1200" can be imported with `File>Open Folder...>Select` and the project will be configured automatically with the Arduino core and libraries - defined in the file `platformio.ini`)
+3. Make sure to respect the correct __pin mapping__ (check `Defines & variables` in the code)
+
+Some informations regarding the data frames being sent from the MKRFox1200 to the Sigfox Backend (_12 bytes maximum_):
+- `getPasswordBySigfox()` sends the following:
+
+| Byte | Type | Content |
+| ------------- | ------------- | ------------- |
+| 1 -> 6  | char  | "UPDATE"  |
+| 7 -> 10  | float - Little Endian | Estimated battery voltage |
+
+- `sendAlertBySigfox()` sends the following:
+
+| Byte  | Type | Content |
+| ------------- | ------------- | ------------- |
+| 1 -> 4  | char  | "OPEN"
+| 5 -> 8  | float - Little Endian | Estimated battery voltage |
+
+You can help yourself with [this](http://www.scadacore.com/field-tools/programming-calculators/online-hex-converter/) website to decode hexadecimal (the battery voltage is a `Float - Little Endian (DCBA)`).
+
+__FYI:__ the estimated battery voltage is only indicating a __very__ rough approximation. It is not a reliable piece of information at all but it will help you get an idea. A better approximation would be made with a 5V battery using the following formula: `float voltage = sensorValue * (5 / 1023)`
 
 ### Flask API - ngrok
 1. Edit the "app.py" script (in folder _MKRFox1200_access_control/__API__/_)
@@ -59,7 +87,7 @@ Start by cloning the repo: `git clone https://github.com/AntoinedeChassey/MKRFox
     $ python app.py
     ```
 
-    If everything went fine, you must be able to access http://localhost:5000/ and see a result in you browser.
+    If everything went fine, you must be able to access http://localhost:5000/ and see a result in your browser.
     There is an endpoint configured to generate a new password when calling http://localhost:5000/getPassword. This will also be used for the Sigfox Backend Callback configuration.
 
     Now we'll take a look at ngrok as a method of exposing your Python server publicly so that the Sigfox Backend can GET/POST data to it.
@@ -127,17 +155,13 @@ Start by cloning the repo: `git clone https://github.com/AntoinedeChassey/MKRFox
 - The new password is accessible on the ngrok Python API (home page - http://localhost:5000/)
 - Each time the correct password is entered, the message "OPEN" is sent to the Sigfox Backend so the owner can be notified it has been opened by someone (this takes 6 seconds)
 
-  <p align="center">
-      <img width="50%" height="50%" src="img/device.png">
-  </p>
-
-## Going Further
+## TODO - Going Further
 - [x] send notification when the box is opened
 - [x] send the approximated voltage of the 3.7V battery when there is a downlink (every 6h)
 - [ ] add multi-tasking to allow asynchronous jobs
 - [ ] put the board in deepsleep to preserve battery consumption
 
 
-__Have fun__ and always keep your keys safe ! :wink: :key:
+__Have fun__ and always keep your keys safe! :wink: :key:
 
 > *Antoine de Chassey*

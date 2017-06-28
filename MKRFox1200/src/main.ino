@@ -92,7 +92,7 @@ void loop() {
         if (currentMillis - previousMillis >= interval) {
                 // save the last time you read the sensor
                 previousMillis = currentMillis;
-                getPasswordBySigfox();
+                updatePasswordBySigfox();
         }
 
         timer.run();
@@ -217,7 +217,7 @@ void lock() {
         setLEDColor(255, 0, 0);  // red
 }
 
-void getPasswordBySigfox() {
+void updatePasswordBySigfox() {
         Serial.println("Fetching new password with Sigfox!");
 
         // Build the frame to be sent
@@ -295,7 +295,7 @@ void sendAlertBySigfox() {
 
         // Build the frame to be sent
         uint8_t msg[8];
-        msg[0] = '0';
+        msg[0] = 'O';
         msg[1] = 'P';
         msg[2] = 'E';
         msg[3] = 'N';
@@ -340,7 +340,7 @@ FLOATUNION_t getEstimatedBatteryVoltage() {
         FLOATUNION_t battery;
         // Read the input on analog pin 0:
         int sensorValue = analogRead(ADC_BATTERY);
-        // Convert the analog reading (which goes from 0 to ~400 at 3.7V)
+        // Convert the analog reading (which goes from 0 to ~757.02 at 3.7V) if you use a 5V battery the formula becomes: sensorValue * (5 / 1023)
         float voltage = sensorValue * (3.7 / 400);
         battery.voltage = voltage;
         if (DEBUG) {
