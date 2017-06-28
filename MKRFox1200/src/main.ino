@@ -41,8 +41,7 @@ int timerId;
 unsigned long previousMillis = 0;            // Will store last updated time
 const long interval = 1000 * 60 * 60 * 6;    // Interval at which to ask for a new password (every 6 hours)
 
-typedef union
-{
+typedef union {
         float voltage;
         uint8_t bytes[4]; // Float - Little Endian (DCBA)
 } FLOATUNION_t;
@@ -221,26 +220,24 @@ void lock() {
 void getPasswordBySigfox() {
         Serial.println("Fetching new password with Sigfox!");
 
+        // Build the frame to be sent
+        uint8_t msg[10];
+        msg[0] = 'U';
+        msg[1] = 'P';
+        msg[2] = 'D';
+        msg[3] = 'A';
+        msg[4] = 'T';
+        msg[5] = 'E';
+        FLOATUNION_t voltage = getEstimatedBatteryVoltage();
+        msg[6] = voltage.bytes[0];
+        msg[7] = voltage.bytes[1];
+        msg[8] = voltage.bytes[2];
+        msg[9] = voltage.bytes[3];
+
         // Disable the timer
-        //timer.disable(timerId);
+        timer.disable(timerId);
         // Set the LED to blue
         setLEDColor(0, 0, 255);
-
-        // Read the input on analog pin 0:
-        int sensorValue = analogRead(ADC_BATTERY);
-        // Convert the analog reading (which goes from 0 to ~400 at 3.7V)
-        float voltage = sensorValue * (3.7 / 400);
-        FLOATUNION_t myFloat;
-        myFloat.voltage = voltage;
-        if (DEBUG) {
-                Serial.println("Battery estimation hexadecimal 4 bytes float:");
-                for (u_int i=0; i<sizeof(myFloat.bytes); i++)
-                {
-                        Serial.print(myFloat.bytes[i], HEX); // Print the hex representation of the float
-                        Serial.print(' ');
-                }
-                Serial.println("Voltage: " + String(myFloat.voltage) + "V");
-        }
 
         // Start the module
         SigFox.begin();
@@ -251,7 +248,7 @@ void getPasswordBySigfox() {
         delay(1);
 
         SigFox.beginPacket();
-        SigFox.write(myFloat.bytes, sizeof(myFloat.bytes));
+        SigFox.write(msg, sizeof(msg));
 
         int ret = SigFox.endPacket(true); // send buffer to SIGFOX network and wait for a response
         if(ret > 0) {
@@ -290,11 +287,27 @@ void getPasswordBySigfox() {
         // Make sure the box is locked with the new password
         lock();
         // Enable the timer back
-        //timer.enable(timerId);
+        timer.enable(timerId);
 }
 
 void sendAlertBySigfox() {
         Serial.println("Sending alert by Sigfox!");
+
+        // Build the frame to be sent
+        uint8_t msg[8];
+        msg[0] = '0';
+        msg[1] = 'P';
+        msg[2] = 'E';
+        msg[3] = 'N';
+        FLOATUNION_t voltage = getEstimatedBatteryVoltage();
+        msg[4] = voltage.bytes[0];
+        msg[5] = voltage.bytes[1];
+        msg[6] = voltage.bytes[2];
+        msg[7] = voltage.bytes[3];
+
+        // Disable the timer
+        timer.disable(timerId);
+
         // Start the module
         SigFox.begin();
         // Wait at least 30mS after first configuration (100mS before)
@@ -304,8 +317,7 @@ void sendAlertBySigfox() {
         delay(1);
 
         SigFox.beginPacket();
-        SigFox.write("OPEN", 4);
-
+        SigFox.write(msg, sizeof(msg));
 
         int ret = SigFox.endPacket();
         if(ret > 0) {
@@ -317,4 +329,29 @@ void sendAlertBySigfox() {
         Serial.println(SigFox.status(SIGFOX));
         Serial.println(SigFox.status(ATMEL));
         SigFox.end();
+
+        // Lock the box automatically after sending notification
+        lock();
+        // Enable the timer back
+        timer.enable(timerId);
+}
+
+FLOATUNION_t getEstimatedBatteryVoltage() {
+        FLOATUNION_t battery;
+        // Read the input on analog pin 0:
+        int sensorValue = analogRead(ADC_BATTERY);
+        // Convert the analog reading (which goes from 0 to ~400 at 3.7V)
+        float voltage = sensorValue * (3.7 / 400);
+        battery.voltage = voltage;
+        if (DEBUG) {
+                Serial.println("Battery estimation hexadecimal 4 bytes float:");
+                for (u_int i=0; i<sizeof(battery.bytes); i++)
+                {
+                        Serial.print(battery.bytes[i], HEX); // Print the hex representation of the float
+                        Serial.print(' ');
+                }
+                Serial.println("Voltage: " + String(battery.voltage) + "V");
+        }
+
+        return battery;
 }

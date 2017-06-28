@@ -135,7 +135,7 @@ Start by cloning the repo: `git clone https://github.com/AntoinedeChassey/MKRFox
 - [x] send notification when the box is opened
 - [x] send the approximated voltage of the 3.7V battery when there is a downlink (every 6h)
 - [ ] add multi-tasking to allow asynchronous jobs
-- [ ] this is an incomplete item
+- [ ] put the board in deepsleep to preserve battery consumption
 
 
 __Have fun__ and always keep your keys safe ! :wink: :key:
