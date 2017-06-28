@@ -5,6 +5,10 @@ What if you were far away from the box and had to change the password for securi
 
 This is where Sigfox comes in ! Indeed, Sigfox allows you to use 4 downlink messages per day. The idea is to be able to update the password controlling the opening of the box. Therefore in this tutorial, every 6 hours (4 times per day), the box's password will be set with a newly generated one from a web application. The owner can then decide to share the password to whom he wants. He will also be notified every time the box is opened !
 
+<p align="center">
+    <img width="50%" height="50%" src="img/box.png">
+</p>
+
 This repository includes:
 - the firmware to upload on the MKRFox1200
 - the web API generating a new password and receiving the box's notifications
@@ -13,12 +17,12 @@ A video presentation is available [here](https://www.youtube.com/watch?v=yTfbNe1
 
 Some photos showing how the mechanical part works:
 
-Opened :unlock:
+:unlock: Opened:
 <p align="center">
     <img width="60%" height="60%" src="img/unlock.png">
 </p>
 
-Closed :lock:
+:lock: Locked:
 <p align="center">
     <img width="60%" height="60%" src="img/lock.png">
 </p>
@@ -28,7 +32,7 @@ Making the box:
     <img width="60%" height="60%" src="img/making.png">
 </p>
 
-Below is a diagram showing how the application works:
+Below is a diagram showing how the global system works:
     <p align="center">
         <img src="img/presentation.png?raw=true">
     </p>
