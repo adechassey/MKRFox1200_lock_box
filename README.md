@@ -3,7 +3,7 @@
 What if you had to store something precious to be picked up by someone you do not know?
 What if you were far away from the box and had to change the password for security reasons?
 
-This is where Sigfox comes in! Indeed, Sigfox allows you to use 4 downlink messages per day. The idea is to be able to update the password controlling the opening of the box. Therefore in this tutorial, every 6 hours (4 times per day), the box's password will be set with a newly generated one from a web application. The owner can then decide to share the password to whom he wants. He will also be notified every time the box is opened!
+This is where Sigfox comes in! Indeed, Sigfox allows you to use 4 downlink messages per day. The idea is to be able to __update the password controlling the opening of the box__. Therefore in this tutorial, every 6 hours (4 times per day), the box's password will be set with a newly generated one from a web application. The owner can then decide to share the password to whom he wants. He will also __be notified every time the box is opened__!
 
 <p align="center">
     <img width="50%" height="50%" src="img/box.png">
