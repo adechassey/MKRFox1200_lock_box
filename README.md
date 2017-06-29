@@ -13,7 +13,7 @@ This repository includes:
 - the firmware to upload on the MKRFox1200
 - the web API generating a new password and receiving the box's notifications
 
-A video presentation is available [here](https://www.youtube.com/watch?v=yTfbNe17UA4)!
+A video presentation is available [here](https://youtu.be/BI61gZuiOqs)!
 
 Some photos showing how the mechanical part works:
 
@@ -78,7 +78,7 @@ __FYI:__ the estimated battery voltage is only indicating a __very__ rough appro
 ### Flask API - ngrok
 1. Edit the "app.py" script (in folder _MKRFox1200_access_control/__API__/_)
 2. Set the `deviceId` variable with your own MKRFox1200 device ID (you can find it when you actived your board or on the [Sigfox Backend](https://backend.sigfox.com/devicetype/list))
-3. Install Flask with pip (Linux commands):
+3. Install the Flask module with pip (Linux commands):
     ```bash
     $ sudo apt-get update && sudo apt-get -y upgrade
     $ sudo apt-get install python-pip3
@@ -163,7 +163,7 @@ __FYI:__ the estimated battery voltage is only indicating a __very__ rough appro
 - [x] send notification when the box is opened
 - [x] send the approximated voltage of the 3.7V battery when there is a downlink (every 6h)
 - [ ] add multi-tasking to allow asynchronous jobs
-- [ ] put the board in deepsleep to preserve battery consumption
+- [ ] put the board in deepsleep when not in use to preserve battery consumption
 
 
 __Have fun__ and always keep your keys safe! :wink: :key:
