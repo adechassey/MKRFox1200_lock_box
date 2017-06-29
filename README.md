@@ -79,7 +79,11 @@ You can help yourself with [this](http://www.scadacore.com/field-tools/programmi
 
 __FYI:__ the estimated battery voltage is only indicating a __very__ rough approximation. It is not a reliable piece of information at all but it will help you get an idea. A better approximation would be made with a 5V battery using the following formula: `float voltage = sensorValue * (5 / 1023)`
 
-### Flask API - ngrok
+### Web Application
+
+In this tutorial we will use ___Flask___ to build our little API. Flask is a microframework for Python which simplifies the creation of web applications. ___ngrok___ will be used to expose it through an online tunnel, this means it will be deployed on YOUR computer for simplicity purposes. Of course, you can decide to deploy it on a private server or PaaS (Platform as a Service) if you wish (this is not presented in this tutorial in order to keep it as short as possible).
+> Please keep in mind Python with Flask can be substituted with any other kind of web application created with a totally different programming language! :wink:
+
 1. Edit the "app.py" script (in folder _MKRFox1200_access_control/__API__/_)
 2. Set the `deviceId` variable with your own MKRFox1200 device ID (you can find it when you actived your board or on the [Sigfox Backend](https://backend.sigfox.com/devicetype/list))
 3. Install the Flask module with pip (Linux commands):
