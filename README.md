@@ -48,6 +48,10 @@ Below is a diagram showing how the global system works:
 - some [jumper wires](https://www.adafruit.com/product/759) and a breadboard
 - a box with a lock system
 
+<p align="center">
+    <img width="60%" height="60%" src="img/hardware.png">
+</p>
+
 ## Installation
 Start by cloning the repo: `git clone https://github.com/AntoinedeChassey/MKRFox1200_lock_box`
 
